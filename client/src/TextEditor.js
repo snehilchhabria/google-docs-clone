@@ -32,15 +32,20 @@ export default function TextEditor() {
     }, [])
 
     useEffect(() => {
-        if(socket == null || quill == null) return
-
+        // Check if the socket or quill are not available, return early if they are not
+        if (socket == null || quill == null) return;
+      
+        // Set up a one-time event listener for the "load-document" event
         socket.once("load-document", document => {
-            quill.setContents(document)
-            quill.enable()
-        })
-
-        socket.emit("get-document", documentId)
-    },[socket, quill, documentId])
+          // Load the received document content into the Quill editor
+          quill.setContents(document);
+          // Enable the Quill editor for user input
+          quill.enable();
+        });
+      
+        // Emit a "get-document" event to request the content of a specific document
+        socket.emit("get-document", documentId);
+      }, [socket, quill, documentId]);
 
     useEffect(() => {
         if (socket == null || quill == null) return;
