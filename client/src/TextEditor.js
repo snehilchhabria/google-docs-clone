@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
-import { io } from 'socket.io-client';
+import { Socket, io } from 'socket.io-client';
 
 
 const TOOLBAR_OPTIONS = [
@@ -18,19 +18,34 @@ const TOOLBAR_OPTIONS = [
 
 
 export default function TextEditor() {
-    const [socket, setSocket] = useState()
-    const [quill, setQuill] = useState()
-    
+    const [socket, setSocket] = useState();
+    const[quill, setQuill] = useState();
+
     useEffect( () => {
-       const s = io("http://localhost:3001")
-       setSocket(s)
+       const s = io("http://localhost:3001") // connecting with the server
+       setSocket(s);
 
        return () => {
-        s.disconnect();
+        s.disconnect(); //disconnecting w the server
        }
     }, [])
+
+    useEffect(() => {
+        if(socket == null || quill == null) return
+        
+        const handler = (delta, oldDelta, source) => {
+            if(source != 'user') return
+            socket.emit("send-changes", delta) //used to snd changes to the sevrer, delta -> only the changes 
+        }
+        quill.on('text-change', handler) //whenevr there is a change we will send the chnaegs using handler
+        return () => {
+            quill.off('text-change', handler)
+        }
+    })
+
     const wrapperRef = useCallback((wrapper) => {
         if(wrapper == null) return
+        
         wrapper.innerHTML=""
         const editor  = document.createElement("div")
         wrapper.append(editor)
