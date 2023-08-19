@@ -31,17 +31,39 @@ export default function TextEditor() {
     }, [])
 
     useEffect(() => {
-        if(socket == null || quill == null) return
-        
-        const handler = (delta, oldDelta, source) => {
-            if(source != 'user') return
-            socket.emit("send-changes", delta) //used to snd changes to the sevrer, delta -> only the changes 
-        }
-        quill.on('text-change', handler) //whenevr there is a change we will send the chnaegs using handler
+        if (socket == null || quill == null) return;
+      
+        // 1. Define a handler function to update the Quill editor
+        const handler = (delta) => {
+          quill.updateContents(delta); // Apply the incoming changes to the Quill editor
+        };
+      
+        // 2. Attach the handler function to the 'receive-changes' event from the server
+        socket.on('receive-changes', handler);
+      
+        // 3. Clean up: Detach the handler when the component is unmounted
         return () => {
-            quill.off('text-change', handler)
-        }
-    })
+          socket.off('receive-changes', handler); // Detach the handler to avoid memory leaks
+        };
+      }, [socket, quill]);
+    useEffect(() => {
+        if (socket == null || quill == null) return;
+      
+        // 1. Define a handler function to send changes to the server
+        const handler = (delta, oldDelta, source) => {
+          if (source !== 'user') return; // Ignore changes not initiated by the user
+          socket.emit("send-changes", delta); // Send the user's changes to the server
+        };
+
+        // 2. Attach the handler function to the 'text-change' event of the Quill editor
+        quill.on('text-change', handler);
+      
+        // 3. Clean up: Detach the handler when the component is unmounted
+        return () => {
+          quill.off('text-change', handler); // Detach the handler to avoid memory leaks
+        };
+      }, [socket, quill]);
+      
 
     const wrapperRef = useCallback((wrapper) => {
         if(wrapper == null) return
